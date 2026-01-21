@@ -2,8 +2,16 @@ import express from "express";
 import axios from "axios";
 
 const app = express();
+
+// مهم جدًا
 app.use(express.json());
 
+// Route اختبار
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
+
+// Route اللوجين
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -18,33 +26,25 @@ app.post("/login", async (req, res) => {
     const response = await axios.post(
       "https://digitallobby.huntington.com/pkmslogin.form",
       new URLSearchParams({
-        username: username,
-        password: password,
+        username,
+        password,
         "login-form-type": "pwd"
       }),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/144.0.0.0"
-        },
-        timeout: 10000
+          "User-Agent": "Mozilla/5.0"
+        }
       }
     );
 
     const body = JSON.stringify(response.data);
 
-    if (body.includes('"operation" : "login_success"')) {
-      return res.json({
-        success: true,
-        status: "SUCCESS"
-      });
+    if (body.includes("login_success")) {
+      return res.json({ success: true });
     }
 
-    return res.json({
-      success: false,
-      status: "FAIL"
-    });
+    return res.json({ success: false });
 
   } catch (err) {
     return res.status(500).json({
@@ -54,7 +54,8 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// مهم جدًا لـ Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("API running on port", PORT);
+  console.log("Server running on port", PORT);
 });
