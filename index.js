@@ -6,22 +6,21 @@ const app = express();
 app.use(express.json());
 
 // ===============================
-// Secure HTTPS Agent (High Security)
+// HTTPS Agent — SECPROTO TLS12
 // ===============================
 const secureAgent = new https.Agent({
   keepAlive: true,
 
-  // إجبار TLS قوي فقط
+  // TLS 1.2 فقط
   minVersion: "TLSv1.2",
-  maxVersion: "TLSv1.3",
+  maxVersion: "TLSv1.2",
 
-  // Cipher Suites قوية
+  // Ciphers مناسبة لـ TLS 1.2
   ciphers: [
-    "TLS_AES_256_GCM_SHA384",
-    "TLS_AES_128_GCM_SHA256",
-    "TLS_CHACHA20_POLY1305_SHA256",
+    "ECDHE-RSA-AES256-GCM-SHA384",
+    "ECDHE-RSA-AES128-GCM-SHA256",
     "ECDHE-ECDSA-AES256-GCM-SHA384",
-    "ECDHE-RSA-AES256-GCM-SHA384"
+    "ECDHE-ECDSA-AES128-GCM-SHA256"
   ].join(":"),
 
   honorCipherOrder: true,
@@ -41,7 +40,6 @@ app.get("/", (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // Validate input
   if (!username || !password) {
     return res.status(400).json({
       success: false,
@@ -53,13 +51,13 @@ app.post("/login", async (req, res) => {
     const response = await axios.post(
       "https://digitallobby.huntington.com/pkmslogin.form",
       new URLSearchParams({
-        username: username,
-        password: password,
+        username,
+        password,
         "login-form-type": "pwd"
       }).toString(),
       {
         httpsAgent: secureAgent,
-        proxy: false, // مهم لو فيه proxy خارجي
+        proxy: false,
 
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -79,27 +77,15 @@ app.post("/login", async (req, res) => {
         ? response.data
         : JSON.stringify(response.data);
 
-    // ===============================
-    // KEYCHECK
-    // ===============================
     if (body.includes('"operation" : "login_success"')) {
-      return res.json({
-        success: true,
-        status: "SUCCESS"
-      });
+      return res.json({ success: true, status: "SUCCESS" });
     }
 
     if (body.includes('"operation" : "login"')) {
-      return res.json({
-        success: false,
-        status: "FAIL"
-      });
+      return res.json({ success: false, status: "FAIL" });
     }
 
-    return res.json({
-      success: false,
-      status: "UNKNOWN_RESPONSE"
-    });
+    return res.json({ success: false, status: "UNKNOWN_RESPONSE" });
 
   } catch (err) {
     return res.status(500).json({
